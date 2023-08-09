@@ -1,5 +1,5 @@
 from flask import request, jsonify, session, current_app
-from flask_restx import Namespace, Resource,fields
+from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from db import db
@@ -14,7 +14,11 @@ auth_model = auth.model('AuthModel', {
     'email': fields.String(required=True, description='Email address'),
     'password': fields.String(required=True, description='Password')
 })
-
+register_model = auth.model('RegisterModel', {
+    'email': fields.String(required=True, description='Email address'),
+    'password': fields.String(required=True, description='Password'),
+    'name': fields.String(required=True, description='Name'),
+})
 update_model = auth.model('UpdateModel', {
     'email': fields.String(required=True, description='Email address'),
     'old_pass': fields.String(required=True, description='Old password'),
@@ -24,10 +28,10 @@ update_model = auth.model('UpdateModel', {
 
 @auth.route('/register', methods=['POST'])
 class Register(Resource):
-    @auth.expect(auth_model, validate=True)
+    @auth.expect(register_model, validate=True)
     def post(self):
         data = request.get_json()
-        business_type = data['business_type']
+        name = data['name']
         email = auth.payload['email']
         password = auth.payload['password']
         date_created = datetime.utcnow()
@@ -42,11 +46,11 @@ class Register(Resource):
         db.sessions.insert_one({"ip": request.remote_addr, "access_token": access_token, "refresh_token": refresh_token, "email": email})
 
         # New user created
-        user = {'email': email, 'password': hashed_password, 'business_type':business_type, "date_created": date_created}
+        user = {'email': email, 'password': hashed_password, 'name': name, "date_created": date_created, "food_banks": [], "restaurants": []}
         db.users.insert_one(user)
         
         print("Registered User Successfully")
-        return {'message': 'User registered successfully', "access_token":access_token,"refresh_token":refresh_token}, 201
+        return {'message': 'User registered successfully', "access_token": access_token, "refresh_token": refresh_token}, 201
 
 
 @auth.route('/login', methods=['POST'])
@@ -96,14 +100,19 @@ class Refresh(Resource):
     def post(self):
         print("error refreshing")
         current_user = get_jwt_identity()
+        jti = get_jwt()['jti']
+
+        if db.blacklisted_tokens.find_one({'jti': jti}) is not None:
+            return {'message': 'use a token that is not blacklisted'}, 401
+
         new_access_token = create_access_token(identity=current_user)
         return {'message':'new access token created using refresh token','access_token': new_access_token}, 200
         
 @auth.route('/logout', methods=['POST'])
 class Logout(Resource):
-    @jwt_required()
+    @jwt_required(refresh=True)
     def post(self):
-        # Add the access token to the blacklist
+        # Add the refresh token to the blacklist
         jti = get_jwt()['jti']
         session.clear()
         db.blacklisted_tokens.insert_one({'jti': jti})

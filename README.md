@@ -38,3 +38,20 @@ Depending on your Python install, you may need to use `python3` and `pip3` inste
 1. Go to [Yelp account](https://www.yelp.com/developers/v3/manage_app) and create/login to an account
 2. Enter in the necessary information into the fields
 3. Copy the API key given and paste it into the `YELP_API_KEY` key in the `.env` file in the `server` folder
+
+### Creating Google Maps API Key
+1. Go to [Google Maps Platform] (https://console.cloud.google.com/getting-started) > Credentials page
+2. On the Credentials page, click Create credentials > API key
+3. Copy the API key given and paste it into the 'GOOGLE_MAAPS_API_KEY' key in the '.env' file in the 'server' folder
+4. Restrict the API key to the domain
+
+### Instructions for running the test
+1. open 3 terminals
+2. on the first terminal cd into the server ex. cd C:\Users\NATO1\OneDrive\Desktop\java\Git\ywsos2023\server
+3. activate the venv on this terminal ----- venv\scripts\activate
+4. run the server on this terminall ----- python app.py after cd server
+5. on the second terminal cd into the client
+6. run the client on this terminal --- npm run dev
+7. on the third terminal cd into tests
+8. activate venv
+9. launch the select test
